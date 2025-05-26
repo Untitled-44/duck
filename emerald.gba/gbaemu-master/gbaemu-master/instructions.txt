@@ -1,0 +1,940 @@
+
+
+
+__________________________________________________________________________________________________________________________________________________________
+__________________________________________________________________________________________________________________________________________________________
+________________________________________________________________________________________________________ARM_____________________________________________
+__________________________________________________________________________________________________________________________________________________________
+__________________________________________________________________________________________________________________________________________________________
+__________________________________________________________________________________________________________________________________________________________
+
+
+
+4.3 Branch and Exchange (BX):
+cccc 0001 0010 1111 1111 1111 0001 nnnn
+first bit of rn determines how to decode the subsequent instructions after the branch
+
+4.4 Branch and Branch with Link (B, BL):
+cccc 101L oooo oooo oooo oooo oooo oooo
+like the branch, except the offset (sign-extended, 2s complement) is added to the pc.
+the link bit determines if the old address is saved in the link register R14, allowing for "function" calls
+
+4.13 Software Interrupt (SWI)
+used for calls to the operating system, enters supervisor mode(SVC) in ARM state
+cccc 1111 xxxx xxxx xxxx xxxx xxxx xxxx
+bottom 24 bits ignored by processor
+
+4.17 Undefined Instruction (undefined)
+cccc 011x xxxx xxxx xxxx xxx1 xxxx
+there is no assembler mnemonic for this, so i guess reserved for future use? 
+
+4.5 Data Processing (ALU) (AND, EOR, SUB, RSB, ADD, ADC, SBC, RSC, TST, TEQ, CMP, CMN, ORR, MOV, BIC, MVN):
+cccc 00Io oooS nnnn dddd 2222 2222 2222 (general format)
+the I bit changes the format of operand 2 (the 12 ending bits)
+the 4 bit opcode after the I bit changes the function of the instruction
+
+if I bit is 0, then operand 2 will be composed of a 8 bit shift, and 4 bits for register. these 8 bits are further composed of either...
+-5 bit imm, 2 bit shift type, and a 0
+-4 bit regnum, 0, 2 bit shift type, and a 1 (bottom byte of register used to shift the register)
+if I bit is 1, then operand 2 will be composed of a 4 bit shift, and 8 bit imm
+
+in otherwords, either shift 8 bit imm with 4 bits, or shift a register with 5 bit imm with more control, or with register's bottom byte with more control
+the resulting number is then used with operand 1, nnnn, with an operation dictated by the opcode
+e.g. nnnn AND mmmm mmmm with 4 bit shift
+
+thus, all possible instructions are
+I bit set to 1 (4 bit shift 8 bit imm) ...
+cccc 0010 000S nnnn dddd ssss mmmm mmmm //AND and
+cccc 0010 001S nnnn dddd ssss mmmm mmmm //EOR exclusive or
+cccc 0010 010S nnnn dddd ssss mmmm mmmm //SUB subtract
+cccc 0010 011S nnnn dddd ssss mmmm mmmm //RSB reverse subtract
+cccc 0010 100S nnnn dddd ssss mmmm mmmm //ADD addition
+cccc 0010 101S nnnn dddd ssss mmmm mmmm //ADC add with carry
+cccc 0010 110S nnnn dddd ssss mmmm mmmm //SBC subtract with carry
+cccc 0010 111S nnnn dddd ssss mmmm mmmm //RSC reverse subtract with carry
+cccc 0011 0001 nnnn dddd ssss mmmm mmmm //TST test bits (dddd is either all 0s or 1s)
+cccc 0011 0011 nnnn dddd ssss mmmm mmmm //TEQ test bitwise equality (dddd is either all 0s or 1s)
+cccc 0011 0101 nnnn dddd ssss mmmm mmmm //CMP compare (dddd is either all 0s or 1s)
+cccc 0011 0111 nnnn dddd ssss mmmm mmmm //CMN compare negative (dddd is either all 0s or 1s)
+cccc 0011 100S nnnn dddd ssss mmmm mmmm //ORR or
+cccc 0011 101S 0000 dddd ssss mmmm mmmm //MOV move register or constant
+cccc 0011 110S nnnn dddd ssss mmmm mmmm //BIC bit clear
+cccc 0011 111S 0000 dddd ssss mmmm mmmm //MVN move negative register
+
+I bit set to 0 (5 bit shift register mmmm by shift type tt)
+cccc 0000 000S nnnn dddd ssss stt0 mmmm //AND and
+cccc 0000 001S nnnn dddd ssss stt0 mmmm //EOR exclusive or
+cccc 0000 010S nnnn dddd ssss stt0 mmmm //SUB subtract
+cccc 0000 011S nnnn dddd ssss stt0 mmmm //RSB reverse subtract
+cccc 0000 100S nnnn dddd ssss stt0 mmmm //ADD addition
+cccc 0000 101S nnnn dddd ssss stt0 mmmm //ADC add with carry
+cccc 0000 110S nnnn dddd ssss stt0 mmmm //SBC subtract with carry
+cccc 0000 111S nnnn dddd ssss stt0 mmmm //RSC reverse subtract with carry
+cccc 0001 0001 nnnn dddd ssss stt0 mmmm //TST test bits (dddd is either all 0s or 1s)
+cccc 0001 0011 nnnn dddd ssss stt0 mmmm //TEQ test bitwise equality (dddd is either all 0s or 1s)
+cccc 0001 0101 nnnn dddd ssss stt0 mmmm //CMP compare (dddd is either all 0s or 1s)
+cccc 0001 0111 nnnn dddd ssss stt0 mmmm //CMN compare negative (dddd is either all 0s or 1s)
+cccc 0001 100S nnnn dddd ssss stt0 mmmm //ORR or
+cccc 0001 101S 0000 dddd ssss stt0 mmmm //MOV move register or constant
+cccc 0001 110S nnnn dddd ssss stt0 mmmm //BIC bit clear
+cccc 0001 111S 0000 dddd ssss stt0 mmmm //MVN move negative register
+
+I bit set to 0 (shift register mmmm by bottom byte in register ssss by shift type tt)
+cccc 0000 000S nnnn dddd ssss 0tt1 mmmm //AND and
+cccc 0000 001S nnnn dddd ssss 0tt1 mmmm //EOR exclusive or
+cccc 0000 010S nnnn dddd ssss 0tt1 mmmm //SUB subtract
+cccc 0000 011S nnnn dddd ssss 0tt1 mmmm //RSB reverse subtract
+cccc 0000 100S nnnn dddd ssss 0tt1 mmmm //ADD addition
+cccc 0000 101S nnnn dddd ssss 0tt1 mmmm //ADC add with carry
+cccc 0000 110S nnnn dddd ssss 0tt1 mmmm //SBC subtract with carry
+cccc 0000 111S nnnn dddd ssss 0tt1 mmmm //RSC reverse subtract with carry
+cccc 0001 0001 nnnn dddd ssss 0tt1 mmmm //TST test bits (dddd is either all 0s or 1s)
+cccc 0001 0011 nnnn dddd ssss 0tt1 mmmm //TEQ test bitwise equality (dddd is either all 0s or 1s)
+cccc 0001 0101 nnnn dddd ssss 0tt1 mmmm //CMP compare (dddd is either all 0s or 1s)
+cccc 0001 0111 nnnn dddd ssss 0tt1 mmmm //CMN compare negative (dddd is either all 0s or 1s)
+cccc 0001 100S nnnn dddd ssss 0tt1 mmmm //ORR or
+cccc 0001 101S 0000 dddd ssss 0tt1 mmmm //MOV move register or constant
+cccc 0001 110S nnnn dddd ssss 0tt1 mmmm //BIC bit clear
+cccc 0001 111S 0000 dddd ssss 0tt1 mmmm //MVN move negative register
+
+
+4.5 Multiply and Multiply-Accumulate (MUL, MLA):
+cccc 0000 00as dddd nnnn ssss 1001 mmmm
+the four bytes before s are an opcode...
+0000 -> a = 0 -> MUL
+0001 -> a = 1 -> MLA
+nnnn should be all 0 if MUL (rd = rs * rm, rn is not used)
+otherwise, in MLA, nnnn can be whatever (rd = rs * rm + rn)
+results in a 32 bit number
+
+4.8 Multiply Long and Multiply-Accumulate Long (MULL, MLAL [with signed and unsigned versions i.e. UMULL, UMLAL, SMULL, SMLAL]):
+cccc 0000 1uas hhhh llll ssss 1001 mmmm
+again, the four bytes before s are an opcode...
+0100 -> u = 0, a = 0, -> UMULL
+0101 -> u = 0, a = 1, -> UMLAL
+0110 -> u = 1, a = 0, -> SMULL
+0111 -> u = 1, a = 1, -> SMLAL
+results in a 64 bit number (a long, hence the L in the instructions)
+
+4.6 PSR transfer (MRS, MSR)
+-Move PSR status/flags to register (MRS)
+-Move register to PSR status/flags (MSR)
+fsxc controls which bits are written (s and x flags should never work, those bits in the PSR are reserved)
+the p bit determines if its CPSR or SPRS_current_mode
+
+MRS:
+cccc 0001 0p00 1111 dddd 0000 0000 0000
+MSR RM:
+cccc 0001 0p10 fsxc 1111 0000 0000 mmmm
+MSR IMM:
+cccc 0011 0p10 fsxc 1111 ssss mmmm mmmm
+
+4.9 Single Data Transfer (LDR - load register from mem, STR - store register to mem) 
+cccc 01ip ubwl nnnn dddd oooo oooo oooo
+
+cccc 01i0 ubt0 nnnn dddd oooo oooo oooo (STR - store to memory) writeback enabled
+cccc 01i1 ubw0 nnnn dddd oooo oooo oooo writeback optional
+
+cccc 01i0 ubt1 nnnn dddd oooo oooo oooo (LDR - load from memory) writeback enabled
+cccc 01i1 ubwl nnnn dddd oooo oooo oooo writeback optional
+
+4.10 Halfword and Signed Data Transfer  (LDRH/STRH/LDRSB/LDRSH)
+load unsigned halfword / store halfword / load signed byte / load signed halfword
+cccc 000p uiwl nnnn dddd xxxx xxxx xxxx
+
+the l bit determines whether it is load or store
+the two bits oo determine what kind of load / store (there is only one kind of store)
+when i = 0, register offset is used (else 8 bit imm, 4 from either side of 1oo1)
+
+p = 0 i = 0
+cccc 0000 u00l nnnn dddd 0000 1oo1 mmmm
+p = 0 i = 1
+cccc 0000 u10l nnnn dddd mmmm 1oo1 mmmm
+p = 1 i = 0
+cccc 0001 u0wl nnnn dddd 0000 1oo1 mmmm
+p = 1 i = 1
+cccc 0001 u1wl nnnn dddd mmmm 1oo1 mmmm
+
+oo has several opcodes that cant be used (reserved or used in higher version of arm)
+the i bit actually changes the format of the 4 bits before and after 1oo1, so the above
+is kind of wrong, the arm parsing section will clarify
+
+4.11 Block Data Transfer (LDM, STM)
+cccc 100p uswl nnnn rrrr rrrr rrrr rrrr
+
+stores / loads a list of registers
+if l bit is set, then LDM, else STM
+
+
+4.12 Single Data Swap (SWP)
+cccc 0001 0b00 nnnn dddd 0000 1001 mmmm
+
+4.14 / 4.15 / 4.16 Coprocessor Instructions (MRC/MCR, LDC,STC, CDP)
+MRC / MCR:
+cccc 1110 oooa nnnn dddd pppp iii1 mmmm
+LDC / STC:
+cccc 110p unwo nnnn dddd pppp mmmm mmmm
+CDP:
+cccc 1110 oooo nnnn dddd pppp iii0 mmmm
+
+these instructions are all ignored, no coprocessor exists in the GBA*
+
+
+__________________________________________________________________________________________________________________________________________________________
+__________________________________________________________________________________________________________________________________________________________
+________________________________________________________________________________________________________THUMB_____________________________________________
+__________________________________________________________________________________________________________________________________________________________
+__________________________________________________________________________________________________________________________________________________________
+__________________________________________________________________________________________________________________________________________________________
+THUMB INSTRUCTIONS ARE 16 BITS
+
+THUMB.1: move shifted register
+000o offf ffss sddd
+
+0000 0fff ffss sddd - LSL IMM5
+0000 1fff ffss sddd - LSR IMM5
+0001 0fff ffss sddd - ASR IMM5
+0001 1fff ffss sddd - reserved
+
+THUMB.2: add/subtract
+0001 1oon nnss sddd
+
+0001 100n nnss sddd - ADD REGISTER
+0001 101n nnss sddd - SUBTRACT REGISTER
+0001 110n nnss sddd - ADD IMM3
+0001 111n nnss sddd - SUB IMM3
+
+THUMB.3: move/compare/add/subtract immediate
+001o oddd nnnn nnnn
+
+0010 0ddd nnnn nnnn - MOV IMM8
+0010 1ddd nnnn nnnn - CMP IMM8
+0011 0ddd nnnn nnnn - ADD IMM8
+0011 1ddd nnnn nnnn - SUB IMM8
+
+THUMB.4: ALU operations
+0100 00oo ooss sddd
+
+0100 0000 00ss sddd - AND
+0100 0000 01ss sddd - XOR
+0100 0000 10ss sddd - LSL
+0100 0000 11ss sddd - LSR
+0100 0001 00ss sddd - ASR
+0100 0001 01ss sddd - ADC
+0100 0001 10ss sddd - SBC
+0100 0001 11ss sddd - ROTATE RIGHT
+0100 0010 00ss sddd - TST
+0100 0010 01ss sddd - NEG
+0100 0010 10ss sddd - CMP
+0100 0010 11ss sddd - NEGCMP
+0100 0011 00ss sddd - OR
+0100 0011 01ss sddd - MUL
+0100 0011 10ss sddd - BIT CLEAR
+0100 0011 11ss sddd - NOT
+
+
+THUMB.5: Hi register operations/branch exchange
+0100 01oo dsss sddd
+unlike other instructions, this instruction can interact with hi (r8-15) registers
+
+0100 0100 10ss sddd - ADD using rd as hi register
+0100 0100 01ss sddd - ADD using rs as hi register
+0100 0100 11ss sddd - ADD both registers are hi
+0100 0101 10ss sddd - CMP using rd as hi register
+0100 0101 01ss sddd - CMP using rs as hi register
+0100 0101 11ss sddd - CMP both registers are hi
+0100 0110 10ss sddd - MOV using rd as hi register
+0100 0110 01ss sddd - MOV using rs as hi register
+0100 0110 11ss sddd - MOV both registers are hi
+0100 0111 0sss s000 - BX only uses rs
+
+THUMB.6: load PC-relative (for loading immediates from literal pool)
+0100 1ddd nnnn nnnn
+
+loads register ddd with 4 byte word at pc + 8 bit imm nnnn nnnn.
+
+THUMB.7: load/store with register offset
+0101 oo0s ssbb bddd
+
+0101 000s ssbb bddd - STR REG OFFSET
+0101 010s ssbb bddd - STRB REG OFFSET 
+0101 100s ssbb bddd - LDR REG OFFSET
+0101 110s ssbb bddd - LDRB REG OFFSET
+s - offset register
+b - base register
+d - source/dest register
+o - opcode
+
+THUMB.8: load/store sign-extended byte/halfword (with register offset)
+0101 oo1s ssbb bddd
+
+0101 001s ssbb bddd - STRH REG OFFSET
+0101 011s ssbb bddd - LDSB REG OFFSET
+0101 101s ssbb bddd - LDRH REG OFFSET
+0101 111s ssbb bddd - LDSH REG OFFSET
+
+
+THUMB.9: load/store with imm offset
+011o osss ssbb bddd
+
+0110 0sss ssbb bddd - STR IMM OFFSET
+0110 1sss ssbb bddd - LDR IMM OFFSET 
+0111 0sss ssbb bddd - STRB IMM OFFSET
+0111 1sss ssbb bddd - LDRB IMM OFFSET
+
+s - 5 bit offset (unsigned)
+
+THUMB.10: load/store halfword (imm offset)
+1000 osss ssbb bddd
+
+1000 0sss ssbb bddd - STRH IMM OFFSET
+1000 1sss ssbb bddd - LDRH IMM OFFSET
+
+THUMB.11: load/store SP-relative
+1001 oddd nnnn nnnn
+
+1001 0ddd nnnn nnnn - STR IMM OFFSET(SP)
+1001 1ddd nnnn nnnn - LDR IMM OFFSET(SP)
+
+like load pc-relative, except stackpointer is used (can also store instead of load based on opcode)
+
+THUMB.12: get relative address
+1010 oddd nnnn nnnn
+
+1010 0ddd nnnn nnnn - ADD RD PC IMM
+1010 1ddd nnnn nnnn - ADD RD SP IMM
+
+stores pc (with bit 1 set to 0?) in rd, or sp in rd, with 8 bit imm (10 bit)
+
+THUMB.13: add offset to stack pointer
+1011 0000 onnn nnnn
+
+1011 0000 0nnn nnnn - ADD SP IMM
+1011 0000 1nnn nnnn - ADD SP -IMM
+
+increments/decrements sp by offset
+
+THUMB.14: push/pop registers
+1011 o10p rrrr rrrr
+
+1011 010p rrrr rrrr - PUSH
+1011 110p rrrr rrrr - POP
+
+stores / loads a list of registers (p bit used for subroutines)
+im assuming pushing / popping registers are done in reverse order
+stack is descending (sp is decremented)
+
+THUMB.15: multiple load/store
+1100 obbb rrrr rrrr
+
+1100 0bbb rrrr rrrr - STMIA
+1100 1bbb rrrr rrrr - LDMIA
+
+same as above, except stores at mem addr in rb
+however, looks like you increment (instead of decrement) rb after you store (and load!)
+meaning the load is intended to be used with the original address used to store
+
+THUMB.16: conditional branch
+1101 oooo ssss ssss
+conditionally branches with 8 bit offset from the pc (which will be +4 from prefetch)
+opcode E (1110) is undefined, should not be used and F (1111) is reserved for SW INTERRUPT
+
+THUMB.18: unconditional branch
+1110 0sss ssss ssss
+branches no matter what with 10 bit offset from the pc (again +4 like before with the other instructions)
+
+THUMB.19: long branch with link
+made up of two instructions (32 bits instead of 16 bits total)
+first instruction
+1111 0nnn nnnn nnnn
+n - upper 11 bits of address
+results in lr = pc + 4 + (nn << 12)
+second instruction
+1111 1nnn nnnn nnnn
+results in pc = LR + (nn << 1), lr = (pc + 2) | 1
+essentially, first instr loads upper 11 bits of addr in lr (shifted by 12 first for space for lower 11 bits), then 
+the second addr loads the lower 11 bits of addr (shifted by one first, making it 12 bits, aligning it by halfword),
+this result is then loaded into pc (pc branches by 23 bits) and lr is set to the address of the instruction after 
+the second instruction — lr = (pc + 2) | 1. the or 1 is there to keep the cpu in THUMB mode
+
+THUMB.17: software interrupt and breakpoint
+1101 1111 nnnn nnnn
+enters SVC mode and switches to ARM state, and saves next instr addr in lr and load SWI vector addr in pc
+n - comment field for exception handler 
+
+
+
+
+
+__________________________________________________________________________________________________________________________________________________________
+__________________________________________________________________________________________________________________________________________________________
+____________________________________________________________________________________ARM_PARSING___________________________________________________________
+__________________________________________________________________________________________________________________________________________________________
+__________________________________________________________________________________________________________________________________________________________
+__________________________________________________________________________________________________________________________________________________________
+instructions here are grouped up by their first four bits (after the condition bits), and further sorted
+
+	 xxxx 7654 3210 xxxx xxxx xxxx 7654 xxxx
+
+[ 'cccc 0000 000S nnnn dddd ssss stt0 mmmm |AND and' ]
+[ 'cccc 0000 001S nnnn dddd ssss stt0 mmmm |EOR exclusive or' ]
+[ 'cccc 0000 010S nnnn dddd ssss stt0 mmmm |SUB subtract' ]
+[ 'cccc 0000 011S nnnn dddd ssss stt0 mmmm |RSB reverse subtract' ]
+[ 'cccc 0000 100S nnnn dddd ssss stt0 mmmm |ADD addition' ]
+[ 'cccc 0000 101S nnnn dddd ssss stt0 mmmm |ADC add with carry' ]
+[ 'cccc 0000 110S nnnn dddd ssss stt0 mmmm |SBC subtract with carry' ]
+[ 'cccc 0000 111S nnnn dddd ssss stt0 mmmm |RSC reverse subtract with carry' ]
+[ 'cccc 0000 000S nnnn dddd ssss 0tt1 mmmm |AND and' ]
+[ 'cccc 0000 001S nnnn dddd ssss 0tt1 mmmm |EOR exclusive or' ]
+[ 'cccc 0000 010S nnnn dddd ssss 0tt1 mmmm |SUB subtract' ]
+[ 'cccc 0000 011S nnnn dddd ssss 0tt1 mmmm |RSB reverse subtract' ]
+[ 'cccc 0000 100S nnnn dddd ssss 0tt1 mmmm |ADD addition' ]
+[ 'cccc 0000 101S nnnn dddd ssss 0tt1 mmmm |ADC add with carry' ]
+[ 'cccc 0000 110S nnnn dddd ssss 0tt1 mmmm |SBC subtract with carry' ]
+[ 'cccc 0000 111S nnnn dddd ssss 0tt1 mmmm |RSC reverse subtract with carry' ]
+[ 'cccc 0000 11as hhhh llll ssss 1001 mmmm |SIGNED MULTIPLY LONG AND MULTIPLY-ACCUMULATE LONG' ]
+[ 'cccc 0000 10as hhhh llll ssss 1001 mmmm |MULTIPLY LONG AND MULTIPLY-ACCUMULATE LONG' ]
+[ 'cccc 0000 00as dddd nnnn ssss 1001 mmmm |MULTIPLY AND MULTIPLY-ACCUMULATE' ]
+[ 'cccc 0000 u000 nnnn dddd 0000 1011 mmmm |p=0 i=0 STRH' ]
+[ 'cccc 0000 u101 nnnn dddd mmmm 1011 mmmm |p=0 i=1 LDRH' ]
+[ 'cccc 0000 u100 nnnn dddd mmmm 1011 mmmm |p=0 i=1 STRH' ]
+[ 'cccc 0000 u001 nnnn dddd 0000 1011 mmmm |p=0 i=0 LDRH' ]
+[ 'cccc 0000 u001 nnnn dddd 0000 1101 mmmm |p=0 i=0 LDRSB' ]
+[ 'cccc 0000 u101 nnnn dddd mmmm 1101 mmmm |p=0 i=1 LDRSB' ]
+[ 'cccc 0000 u001 nnnn dddd 0000 1111 mmmm |p=0 i=0 LDRSH' ]
+[ 'cccc 0000 u101 nnnn dddd mmmm 1111 mmmm |p=0 i=1 LDRSH' ]
+
+
+[ 'cccc 0001 0p00 1111 dddd 0000 0000 0000 |MRS' ]
+[ 'cccc 0001 0p10 fsxc 1111 0000 0000 mmmm |MSR register' ]
+[ 'cccc 0001 0001 nnnn dddd ssss stt0 mmmm |TST test bits (dddd is either all 0s or 1s)' ]
+[ 'cccc 0001 0011 nnnn dddd ssss stt0 mmmm |TEQ test bitwise equality (dddd is either all 0s or 1s)' ]
+[ 'cccc 0001 0101 nnnn dddd ssss stt0 mmmm |CMP compare (dddd is either all 0s or 1s)' ]
+[ 'cccc 0001 0111 nnnn dddd ssss stt0 mmmm |CMN compare negative (dddd is either all 0s or 1s)' ]
+[ 'cccc 0001 100S nnnn dddd ssss stt0 mmmm |ORR or' ]
+[ 'cccc 0001 101S 0000 dddd ssss stt0 mmmm |MOV move register or constant' ]
+[ 'cccc 0001 110S nnnn dddd ssss stt0 mmmm |BIC bit clear' ]
+[ 'cccc 0001 111S 0000 dddd ssss stt0 mmmm |MVN move negative register' ]
+[ 'cccc 0001 0001 nnnn dddd ssss 0tt1 mmmm |TST test bits (dddd is either all 0s or 1s)' ]
+[ 'cccc 0001 0011 nnnn dddd ssss 0tt1 mmmm |TEQ test bitwise equality (dddd is either all 0s or 1s)' ]
+[ 'cccc 0001 0101 nnnn dddd ssss 0tt1 mmmm |CMP compare (dddd is either all 0s or 1s)' ]
+[ 'cccc 0001 0111 nnnn dddd ssss 0tt1 mmmm |CMN compare negative (dddd is either all 0s or 1s)' ]
+[ 'cccc 0001 100S nnnn dddd ssss 0tt1 mmmm |ORR or' ]
+[ 'cccc 0001 101S 0000 dddd ssss 0tt1 mmmm |MOV move register or constant' ]
+[ 'cccc 0001 110S nnnn dddd ssss 0tt1 mmmm |BIC bit clear' ]
+[ 'cccc 0001 111S 0000 dddd ssss 0tt1 mmmm |MVN move negative register' ]
+[ 'cccc 0001 0010 1111 1111 1111 0001 nnnn |BRANCH AND EXCHANGE' ]
+[ 'cccc 0001 0b00 nnnn dddd 0000 1001 mmmm |SWP' ]
+[ 'cccc 0001 u0w1 nnnn dddd 0000 1011 mmmm |p=1 i=0 LDRH' ]
+[ 'cccc 0001 u1w0 nnnn dddd mmmm 1011 mmmm |p=1 i=1 STRH' ]
+[ 'cccc 0001 u0w0 nnnn dddd 0000 1011 mmmm |p=1 i=0 STRH' ]
+[ 'cccc 0001 u1w1 nnnn dddd mmmm 1011 mmmm |p=1 i=1 LDRH' ]
+[ 'cccc 0001 u0w1 nnnn dddd 0000 1101 mmmm |p=1 i=0 LDRSB' ]
+[ 'cccc 0001 u1w1 nnnn dddd mmmm 1101 mmmm |p=1 i=1 LDRSB' ]
+[ 'cccc 0001 u0w1 nnnn dddd 0000 1111 mmmm |p=1 i=0 LDRSH' ]
+[ 'cccc 0001 u1w1 nnnn dddd mmmm 1111 mmmm |p=1 i=1 LDRSH' ]
+
+[ 'cccc 0010 000S nnnn dddd ssss mmmm mmmm |AND and' ]
+[ 'cccc 0010 001S nnnn dddd ssss mmmm mmmm |EOR exclusive or' ]
+[ 'cccc 0010 010S nnnn dddd ssss mmmm mmmm |SUB subtract' ]
+[ 'cccc 0010 011S nnnn dddd ssss mmmm mmmm |RSB reverse subtract' ]
+[ 'cccc 0010 100S nnnn dddd ssss mmmm mmmm |ADD addition' ]
+[ 'cccc 0010 101S nnnn dddd ssss mmmm mmmm |ADC add with carry' ]
+[ 'cccc 0010 110S nnnn dddd ssss mmmm mmmm |SBC subtract with carry' ]
+[ 'cccc 0010 111S nnnn dddd ssss mmmm mmmm |RSC reverse subtract with carry' ]
+
+[ 'cccc 010p ubwl nnnn dddd oooo oooo oooo |LDR / STR i = 0' ]
+[ 'cccc 011p ubwl nnnn dddd ssss stt0 mmmm |LDR / STR i = 1' ]
+
+[ 'cccc 0011 0p10 fsxc 1111 ssss mmmm mmmm |MSR imm' ]
+[ 'cccc 0011 0001 nnnn dddd ssss mmmm mmmm |TST test bits (dddd is either all 0s or 1s)' ]
+[ 'cccc 0011 0011 nnnn dddd ssss mmmm mmmm |TEQ test bitwise equality (dddd is either all 0s or 1s)' ]
+[ 'cccc 0011 0101 nnnn dddd ssss mmmm mmmm |CMP compare (dddd is either all 0s or 1s)' ]
+[ 'cccc 0011 0111 nnnn dddd ssss mmmm mmmm |CMN compare negative (dddd is either all 0s or 1s)' ]
+[ 'cccc 0011 100S nnnn dddd ssss mmmm mmmm |ORR or' ]
+[ 'cccc 0011 101S 0000 dddd ssss mmmm mmmm |MOV move register or constant' ]
+[ 'cccc 0011 110S nnnn dddd ssss mmmm mmmm |BIC bit clear' ]
+[ 'cccc 0011 111S 0000 dddd ssss mmmm mmmm |MVN move negative register' ]
+
+[ 'cccc 100p uswl nnnn rrrr rrrr rrrr rrrr |LDM, STM', ]
+[ 'cccc 101L oooo oooo oooo oooo oooo oooo |BRANCH / BRANCH AND LINK', ]
+[ 'cccc 110p unwo nnnn dddd pppp mmmm mmmm |LDC / STC', ]
+[ 'cccc 1110 oooo nnnn dddd pppp iii0 mmmm |CDP', ]
+[ 'cccc 1110 oooa nnnn dddd pppp iii1 mmmm |MRC / MCR', ]
+[ 'cccc 1111 xxxx xxxx xxxx xxxx xxxx xxxx |SOFTWARE INTERRUPT', ]
+
+numbers in brackets refer to how these sections are ordered in GBATEK
+ARM opcode map -
+0 - MULL / MLAL (MULTIPLY AND MULTIPLY ACCUMULATE [5])
+1 - MUL / MLA (MULTIPLY AND MULTIPLY ACCUMULATE [5])
+2 - STRH p=0 i=0 check needed (Memory: Halfword, Doubleword, and Signed Data Transfer [8])
+3 - LDRH p=0 i=0 check needed (Memory: Halfword, Doubleword, and Signed Data Transfer [8])
+4 - STRH p=0 i=1 (Memory: Halfword, Doubleword, and Signed Data Transfer [8])
+5 - LDRH p=0 i=1 (Memory: Halfword, Doubleword, and Signed Data Transfer [8])
+6 - LDRSB p=0 i=0 check needed (Memory: Halfword, Doubleword, and Signed Data Transfer [8])
+7 - LDRSB p=0 i=1 (Memory: Halfword, Doubleword, and Signed Data Transfer [8])
+8 - LDRSH p=0 i=0 check needed (Memory: Halfword, Doubleword, and Signed Data Transfer [8])
+9 - LDRSH p=0 i=1 (Memory: Halfword, Doubleword, and Signed Data Transfer [8])
+10 - AND 0tt1 (DATA PROCESSING OPCODES 0-7 REGISTER SECOND OP, SHIFT BY REGISTER [4])
+11 - EOR 0tt1 (DATA PROCESSING OPCODES 0-7 REGISTER SECOND OP, SHIFT BY REGISTER [4])
+12 - SUB 0tt1 (DATA PROCESSING OPCODES 0-7 REGISTER SECOND OP, SHIFT BY REGISTER [4])
+13 - RSB 0tt1 (DATA PROCESSING OPCODES 0-7 REGISTER SECOND OP, SHIFT BY REGISTER [4])
+14 - ADD 0tt1 (DATA PROCESSING OPCODES 0-7 REGISTER SECOND OP, SHIFT BY REGISTER [4])
+15 - ADC 0tt1 (DATA PROCESSING OPCODES 0-7 REGISTER SECOND OP, SHIFT BY REGISTER [4])
+16 - SBC 0tt1 (DATA PROCESSING OPCODES 0-7 REGISTER SECOND OP, SHIFT BY REGISTER [4])
+17 - RSC 0tt1 (DATA PROCESSING OPCODES 0-7 REGISTER SECOND OP, SHIFT BY REGISTER [4])
+18 - AND stt0 (DATA PROCESSING OPCODES 0-7 REGISTER SECOND OP, SHIFT BY IMM [4])
+19 - EOR stt0 (DATA PROCESSING OPCODES 0-7 REGISTER SECOND OP, SHIFT BY IMM [4])
+20 - SUB stt0 (DATA PROCESSING OPCODES 0-7 REGISTER SECOND OP, SHIFT BY IMM [4])
+21 - RSB stt0 (DATA PROCESSING OPCODES 0-7 REGISTER SECOND OP, SHIFT BY IMM [4])
+22 - ADD stt0 (DATA PROCESSING OPCODES 0-7 REGISTER SECOND OP, SHIFT BY IMM [4])
+23 - ADC stt0 (DATA PROCESSING OPCODES 0-7 REGISTER SECOND OP, SHIFT BY IMM [4])
+24 - SBC stt0 (DATA PROCESSING OPCODES 0-7 REGISTER SECOND OP, SHIFT BY IMM [4])
+25 - RSC stt0 (DATA PROCESSING OPCODES 0-7 REGISTER SECOND OP, SHIFT BY IMM [4])
+
+26 - TST 0tt1 check needed (DATA PROCESSING OPCODES 0-15 REGISTER SECOND OP, SHIFT BY REGISTER [4])
+27 - TEQ 0tt1 (DATA PROCESSING OPCODES 0-15 REGISTER SECOND OP, SHIFT BY REGISTER [4])
+28 - BX (BRANCH AND EXCHANGE [2]) 
+29 - CMP 0tt1 check needed (DATA PROCESSING OPCODES 0-15 REGISTER SECOND OP, SHIFT BY REGISTER [4])
+30 - CMN 0tt1 check needed (DATA PROCESSING OPCODES 0-15 REGISTER SECOND OP, SHIFT BY REGISTER [4])
+31 - ORR 0tt1 (DATA PROCESSING OPCODES 0-15 REGISTER SECOND OP, SHIFT BY REGISTER [4])
+32 - MOV 0tt1 check needed (DATA PROCESSING OPCODES 0-15 REGISTER SECOND OP, SHIFT BY REGISTER [4])
+33 - BIC 0tt1 (DATA PROCESSING OPCODES 0-15 REGISTER SECOND OP, SHIFT BY REGISTER [4])
+34 - MVN 0tt1 check needed (DATA PROCESSING OPCODES 0-15 REGISTER SECOND OP, SHIFT BY REGISTER [4])
+
+35 - SWP check needed (Single Data Swap [10])
+36 - STRH p=1 i=0 check needed (Memory: Halfword, Doubleword, and Signed Data Transfer [8])
+37 - LDRH p=1 i=0 check needed (Memory: Halfword, Doubleword, and Signed Data Transfer [8])
+38 - STRH p=1 i=1 (Memory: Halfword, Doubleword, and Signed Data Transfer [8])
+39 - LDRH p=1 i=1 (Memory: Halfword, Doubleword, and Signed Data Transfer [8])
+40 - LDRSB p=1 i=0 check needed (Memory: Halfword, Doubleword, and Signed Data Transfer [8])
+41 - LDRSB p=1 i=1 (Memory: Halfword, Doubleword, and Signed Data Transfer [8])
+42 - LDRSH p=1 i=0 check needed (Memory: Halfword, Doubleword, and Signed Data Transfer [8])
+43 - LDRSH p=1 i=1 (Memory: Halfword, Doubleword, and Signed Data Transfer [8])
+44 - MRS check needed (PSR Transfer [6])
+45 - MSR register check needed (PSR Transfer [6])
+46 - TST stt0 (DATA PROCESSING OPCODES 8-15 REGISTER SECOND OP, SHIFT BY IMM [4])
+47 - TEQ stt0 (DATA PROCESSING OPCODES 8-15 REGISTER SECOND OP, SHIFT BY IMM [4])
+48 - CMP stt0 (DATA PROCESSING OPCODES 8-15 REGISTER SECOND OP, SHIFT BY IMM [4])
+49 - CMN stt0 (DATA PROCESSING OPCODES 8-15 REGISTER SECOND OP, SHIFT BY IMM [4])
+50 - ORR stt0 (DATA PROCESSING OPCODES 8-15 REGISTER SECOND OP, SHIFT BY IMM [4])
+51 - MOV stt0 check needed (DATA PROCESSING OPCODES 8-15 REGISTER SECOND OP, SHIFT BY IMM [4])
+52 - BIC stt0 (DATA PROCESSING OPCODES 8-15 REGISTER SECOND OP, SHIFT BY IMM [4])
+53 - MVN stt0 check needed (DATA PROCESSING OPCODES 8-15 REGISTER SECOND OP, SHIFT BY IMM [4])
+
+54 - AND imm (DATA PROCESSING OPCODES 0-7 IMM SECOND OP [4])
+55 - EOR imm (DATA PROCESSING OPCODES 0-7 IMM SECOND OP [4])
+56 - SUB imm (DATA PROCESSING OPCODES 0-7 IMM SECOND OP [4])
+57 - RSB imm (DATA PROCESSING OPCODES 0-7 IMM SECOND OP [4])
+58 - ADD imm (DATA PROCESSING OPCODES 0-7 IMM SECOND OP [4])
+59 - ADC imm (DATA PROCESSING OPCODES 0-7 IMM SECOND OP [4])
+60 - SBC imm (DATA PROCESSING OPCODES 0-7 IMM SECOND OP [4])
+61 - RSC imm (DATA PROCESSING OPCODES 0-7 IMM SECOND OP [4])
+
+62 - TST imm (DATA PROCESSING OPCODES 0-15 IMM SECOND OP [4])
+63 - MSR imm (PSR Transfer [6])
+64 - TEQ imm (DATA PROCESSING OPCODES 0-15 IMM SECOND OP [4])
+65 - CMP imm (DATA PROCESSING OPCODES 0-15 IMM SECOND OP [4])
+66 - CMN imm (DATA PROCESSING OPCODES 0-15 IMM SECOND OP [4])
+67 - ORR imm (DATA PROCESSING OPCODES 0-15 IMM SECOND OP [4])
+68 - MOV imm check needed (DATA PROCESSING OPCODES 0-15 IMM SECOND OP [4])
+69 - BIC imm (DATA PROCESSING OPCODES 0-15 IMM SECOND OP [4])
+70 - MVN imm check needed (DATA PROCESSING OPCODES 0-15 IMM SECOND OP [4])
+
+71 - LDR / STR i=0 (Single Data Transfer [7])
+72 - LDR / STR i=1 check needed(Single Data Transfer [7])
+
+73 - LDM / STM (Block Data Transfer [9])
+74 - B / BL (BRANCH AND BRANCH WITH LINK [1])
+75 - LDC / STC (Coproc Instructions [11])
+76 - CDP (Coproc Instructions [11])
+77 - MRC / MCR (Coproc Instructions [11])
+78 - SWI (SOFTWARE INTERRUPT [3])
+
+79 - SMULL / SMLAL (MULTIPLY AND MULTIPLY ACCUMULATE [5]) (skipped over this instruction somehow, so its all the way here at the bottom) 
+
+ARM LUT (bits 4-7 + bits 20-27, total size of table is 2 ^ 12 === 4096)
+																															
+const armtable = 
+[
+'0000 10as 1001 |MULTIPLY LONG AND MULTIPLY-ACCUMULATE LONG',
+'0000 00as 1001 |MULTIPLY AND MULTIPLY-ACCUMULATE',
+'0000 u000 1011 |p=0 i=0 STRH',
+'0000 u001 1011 |p=0 i=0 LDRH',
+'0000 u100 1011 |p=0 i=1 STRH',
+'0000 u101 1011 |p=0 i=1 LDRH',
+'0000 u001 1101 |p=0 i=0 LDRSB',
+'0000 u101 1101 |p=0 i=1 LDRSB',
+'0000 u001 1111 |p=0 i=0 LDRSH',
+'0000 u101 1111 |p=0 i=1 LDRSH',
+'0000 000S 0tt1 |AND and',
+'0000 001S 0tt1 |EOR exclusive or',
+'0000 010S 0tt1 |SUB subtract',
+'0000 011S 0tt1 |RSB reverse subtract',
+'0000 100S 0tt1 |ADD addition',
+'0000 101S 0tt1 |ADC add with carry',
+'0000 110S 0tt1 |SBC subtract with carry',
+'0000 111S 0tt1 |RSC reverse subtract with carry',
+'0000 000S stt0 |AND and',
+'0000 001S stt0 |EOR exclusive or',
+'0000 010S stt0 |SUB subtract',
+'0000 011S stt0 |RSB reverse subtract',
+'0000 100S stt0 |ADD addition',
+'0000 101S stt0 |ADC add with carry',
+'0000 110S stt0 |SBC subtract with carry',
+'0000 111S stt0 |RSC reverse subtract with carry',
+
+'0001 0001 0tt1 |TST test bits (dddd is either all 0s or 1s)',
+'0001 0011 0tt1 |TEQ test bitwise equality (dddd is either all 0s or 1s)',
+'0001 0010 0001 |BRANCH AND EXCHANGE',
+'0001 0101 0tt1 |CMP compare (dddd is either all 0s or 1s)',
+'0001 0111 0tt1 |CMN compare negative (dddd is either all 0s or 1s)',
+'0001 100S 0tt1 |ORR or',
+'0001 101S 0tt1 |MOV move register or constant',
+'0001 110S 0tt1 |BIC bit clear',
+'0001 111S 0tt1 |MVN move negative register',
+'0001 0b00 1001 |SWP',
+'0001 u0w0 1011 |p=1 i=0 STRH',
+'0001 u0w1 1011 |p=1 i=0 LDRH',
+'0001 u1w0 1011 |p=1 i=1 STRH',
+'0001 u1w1 1011 |p=1 i=1 LDRH',
+'0001 u0w1 1101 |p=1 i=0 LDRSB',
+'0001 u1w1 1101 |p=1 i=1 LDRSB',
+'0001 u0w1 1111 |p=1 i=0 LDRSH',
+'0001 u1w1 1111 |p=1 i=1 LDRSH',
+'0001 0p00 0000 |MRS',
+'0001 0p10 0000 |MSR register',
+'0001 0001 stt0 |TST test bits (dddd is either all 0s or 1s)',
+'0001 0011 stt0 |TEQ test bitwise equality (dddd is either all 0s or 1s)',
+'0001 0101 stt0 |CMP compare (dddd is either all 0s or 1s)',
+'0001 0111 stt0 |CMN compare negative (dddd is either all 0s or 1s)',
+'0001 100S stt0 |ORR or',
+'0001 101S stt0 |MOV move register or constant',
+'0001 110S stt0 |BIC bit clear',
+'0001 111S stt0 |MVN move negative register',
+
+
+'0010 000S mmmm |AND and',
+'0010 001S mmmm |EOR exclusive or',
+'0010 010S mmmm |SUB subtract',
+'0010 011S mmmm |RSB reverse subtract',
+'0010 100S mmmm |ADD addition',
+'0010 101S mmmm |ADC add with carry',
+'0010 110S mmmm |SBC subtract with carry',
+'0010 111S mmmm |RSC reverse subtract with carry',
+
+'0011 0001 mmmm |TST test bits (dddd is either all 0s or 1s)',
+'0011 0p10 mmmm |MSR imm',
+'0011 0011 mmmm |TEQ test bitwise equality (dddd is either all 0s or 1s)',
+'0011 0101 mmmm |CMP compare (dddd is either all 0s or 1s)',
+'0011 0111 mmmm |CMN compare negative (dddd is either all 0s or 1s)',
+'0011 100S mmmm |ORR or',
+'0011 101S mmmm |MOV move register or constant',
+'0011 110S mmmm |BIC bit clear',
+'0011 111S mmmm |MVN move negative register',
+
+'010p ubwl oooo |LDR / STR i = 0',
+'011p ubwl stt0 |LDR / STR i = 1', //0101 0111 0111 0010 0100 0110 0111 0010
+
+'100p uswl rrrr |LDM, STM',
+'101L oooo oooo |BRANCH / BRANCH AND LINK',
+'110p unwo mmmm |LDC / STC',
+'1110 oooo iii0 |CDP',
+'1110 oooa iii1 |MRC / MCR',
+'1111 xxxx xxxx |SOFTWARE INTERRUPT',
+
+'0000 11as 1001 |SIGNED MULTIPLY LONG AND MULTIPLY-ACCUMULATE LONG',
+];
+
+
+
+__________________________________________________________________________________________________________________________________________________________
+__________________________________________________________________________________________________________________________________________________________
+__________________________________________________________________________________THUMB_PARSING___________________________________________________________
+__________________________________________________________________________________________________________________________________________________________
+__________________________________________________________________________________________________________________________________________________________
+__________________________________________________________________________________________________________________________________________________________
+
+THUMB.1
+[ '0000 0fff ffss sddd - LSL IMM5' ]
+[ '0000 1fff ffss sddd - LSR IMM5' ] 
+[ '0001 0fff ffss sddd - ASR IMM5' ]
+
+THUMB.2
+[ '0001 100n nnss sddd - ADD REGISTER' ]
+[ '0001 101n nnss sddd - SUBTRACT REGISTER' ]
+[ '0001 110n nnss sddd - ADD IMM3' ]
+[ '0001 111n nnss sddd - SUB IMM3' ]
+
+THUMB.3
+[ '0010 0ddd nnnn nnnn - MOV IMM8' ]
+[ '0010 1ddd nnnn nnnn - CMP IMM8' ]
+[ '0011 0ddd nnnn nnnn - ADD IMM8' ]
+[ '0011 1ddd nnnn nnnn - SUB IMM8' ]
+
+THUMB.4
+[ '0100 0000 00ss sddd - AND' ]
+[ '0100 0000 01ss sddd - XOR' ]
+[ '0100 0000 10ss sddd - LSL' ]
+[ '0100 0000 11ss sddd - LSR' ]
+[ '0100 0001 00ss sddd - ASR' ]
+[ '0100 0001 01ss sddd - ADC' ]
+[ '0100 0001 10ss sddd - SBC' ]
+[ '0100 0001 11ss sddd - ROTATE RIGHT' ]
+[ '0100 0010 00ss sddd - TST' ]
+[ '0100 0010 01ss sddd - NEG' ]
+[ '0100 0010 10ss sddd - CMP' ]
+[ '0100 0010 11ss sddd - NEGCMP' ]
+[ '0100 0011 00ss sddd - OR' ]
+[ '0100 0011 01ss sddd - MUL' ]
+[ '0100 0011 10ss sddd - BIT CLEAR' ]
+[ '0100 0011 11ss sddd - NOT' ]
+
+THUMB.5
+[ '0100 0100 10ss sddd - ADD using rd as hi register' ]
+[ '0100 0100 01ss sddd - ADD using rs as hi register' ]
+[ '0100 0100 11ss sddd - ADD both registers are hi' ]
+[ '0100 0101 10ss sddd - CMP using rd as hi register' ]
+[ '0100 0101 01ss sddd - CMP using rs as hi register' ]
+[ '0100 0101 11ss sddd - CMP both registers are hi' ]
+[ '0100 0110 10ss sddd - MOV using rd as hi register' ]
+[ '0100 0110 01ss sddd - MOV using rs as hi register' ]
+[ '0100 0110 11ss sddd - MOV both registers are hi' ]
+[ '0100 0111 0sss s000 - BX only uses rs' ]
+
+THUMB.6
+[ '0100 1ddd nnnn nnnn - LDR IMM (PC)' ]
+
+THUMB.7
+[ '0101 000s ssbb bddd - STR REG OFFSET' ]
+[ '0101 010s ssbb bddd - STRB REG OFFSET' ]
+[ '0101 100s ssbb bddd - LDR REG OFFSET' ]
+[ '0101 110s ssbb bddd - LDRB REG OFFSET' ]
+
+THUMB.8
+[ '0101 001s ssbb bddd - STRH REG OFFSET' ]
+[ '0101 011s ssbb bddd - LDSB REG OFFSET' ]
+[ '0101 101s ssbb bddd - LDRH REG OFFSET' ]
+[ '0101 111s ssbb bddd - LDSH REG OFFSET' ]
+
+THUMB.9
+[ '0110 0sss ssbb bddd - STR IMM OFFSET' ]
+[ '0110 1sss ssbb bddd - LDR IMM OFFSET ' ]
+[ '0111 0sss ssbb bddd - STRB IMM OFFSET' ]
+[ '0111 1sss ssbb bddd - LDRB IMM OFFSET' ]
+
+THUMB.10
+[ '1000 0sss ssbb bddd - STRH IMM OFFSET' ]
+[ '1000 1sss ssbb bddd - LDRH IMM OFFSET' ]
+
+THUMB.11
+[ '1001 0ddd nnnn nnnn - STR IMM OFFSET(SP)' ]
+[ '1001 1ddd nnnn nnnn - LDR IMM OFFSET(SP)' ]
+
+THUMB.12
+[ '1010 0ddd nnnn nnnn - ADD RD PC IMM' ]
+[ '1010 1ddd nnnn nnnn - ADD RD SP IMM' ]
+
+THUMB.13
+[ '1011 0000 0nnn nnnn - ADD SP IMM' ]
+[ '1011 0000 1nnn nnnn - ADD SP -IMM' ]
+
+THUMB.14
+[ '1011 010p rrrr rrrr - PUSH' ]
+[ '1011 110p rrrr rrrr - POP' ]
+
+THUMB.15
+[ '1100 0bbb rrrr rrrr - STMIA' ]
+[ '1100 1bbb rrrr rrrr - LDMIA' ]
+
+THUMB.16 / THUMB.17 respectively
+[ '1101 oooo ssss ssss - CONDITIONAL BRANCH' ]
+[ '1101 1111 nnnn nnnn - SW INTR' ]
+
+THUMB.18
+[ '1110 0sss ssss ssss - UNCONDITIONAL BRANCH' ]
+
+THUMB.19
+[ '1111 0nnn nnnn nnnn - LONG BRANCH 1' ]
+[ '1111 1nnn nnnn nnnn - LONG BRANCH 2' ]
+
+
+
+THUMB opcode map -
+0 - LSL IMM5 (THUMB.1)
+1 - LSR IMM5 (THUMB.1)
+2 - ASR IMM5 (THUMB.1)
+3 - ADD REGISTER (THUMB.2)
+4 - SUBTRACT REGISTER (THUMB.2)
+5 - ADD IMM3 (THUMB.2)
+6 - SUB IMM3 (THUMB.2)
+7 - MOV IMM8 (THUMB.3)
+8 - CMP IMM8 (THUMB.3)
+9 - ADD IMM8 (THUMB.3)
+10 - SUB IMM8 (THUMB.3)
+11 - AND  (THUMB.4)
+12 - XOR (THUMB.4)
+13 - LSL (THUMB.4)
+14 - LSR (THUMB.4)
+15 - ASR (THUMB.4)
+16 - ADC (THUMB.4)
+17 - SBC (THUMB.4)
+18 - ROTATE RIGHT (THUMB.4)
+19 - TST (THUMB.4)
+20 - NEG (THUMB.4)
+21 - CMP (THUMB.4)
+22 - NEGCMP (THUMB.4)
+23 - OR (THUMB.4)
+24 - MUL (THUMB.4)
+25 - BIT CLEAR (THUMB.4)
+26 - NOT (THUMB.4)
+27 - ADD check needed (THUMB.5)
+28 - CMP check needed (THUMB.5)
+29 - MOV check needed (THUMB.5)
+30 - BX check needed (THUMB.5)
+31 - LDR IMM (PC) (THUMB.6)
+32 - STR REG OFFSET (THUMB.7)
+33 - STRH REG OFFSET (THUMB.8)
+34 - STRB REG OFFSET (THUMB.7)
+35 - LDSB REG OFFSET (THUMB.8)
+36 - LDR REG OFFSET (THUMB.7)
+37 - LDRH REG OFFSET (THUMB.8)
+38 - LDRB REG OFFSET (THUMB.7)
+39 - LDSH REG OFFSET (THUMB.8)
+40 - STR IMM OFFSET (THUMB.9)
+41 - LDR IMM OFFSET (THUMB.9)
+42 - STRB IMM OFFSET (THUMB.9)
+43 - LDRB IMM OFFSET (THUMB.9)
+44 - STRH IMM OFFSET (THUMB.10)
+45 - LDRH IMM OFFSET (THUMB.10)
+46 - STR IMM OFFSET (SP) (THUMB.11)
+47 - LDR IMM OFFSET (SP) (THUMB.11)
+48 - ADD RD PC IMM (THUMB.12)
+49 - ADD RD SP IMM (THUMB.12)
+50 - ADD SP IMM (THUMB.13)
+51 - ADD SP -IMM (THUMB.13)
+52 - PUSH (THUMB.14)
+53 - POP (THUMB.14)
+54 - STMIA (THUMB.15)
+55 - LDMIA (THUMB.15)
+56 - CONDITIONAL BRANCH (THUMB.16)
+57 - SWI (THUMB.17)
+58 - UNCONDITIONAL BRANCH (THUMB.18)
+59 - LONG BRANCH 1 (THUMB.19)
+60 - LONG BRANCH 2 (THUMB.19)
+
+THUMB LUT (bits 6 - 15, total size of table is 2 ^ 10 === 1024)
+
+const thumbtable = 
+[
+'0000 0fff ffss sddd - LSL IMM5',
+'0000 1fff ffss sddd - LSR IMM5', 
+'0001 0fff ffss sddd - ASR IMM5',
+
+'0001 100n nnss sddd - ADD REGISTER',
+'0001 101n nnss sddd - SUBTRACT REGISTER',
+'0001 110n nnss sddd - ADD IMM3',
+'0001 111n nnss sddd - SUB IMM3',
+
+'0010 0ddd nnnn nnnn - MOV IMM8',
+'0010 1ddd nnnn nnnn - CMP IMM8',
+'0011 0ddd nnnn nnnn - ADD IMM8',
+'0011 1ddd nnnn nnnn - SUB IMM8',
+
+'0100 0000 00ss sddd - AND',
+'0100 0000 01ss sddd - XOR',
+'0100 0000 10ss sddd - LSL',
+'0100 0000 11ss sddd - LSR',
+'0100 0001 00ss sddd - ASR',
+'0100 0001 01ss sddd - ADC',
+'0100 0001 10ss sddd - SBC',
+'0100 0001 11ss sddd - ROTATE RIGHT',
+'0100 0010 00ss sddd - TST',
+'0100 0010 01ss sddd - NEG',
+'0100 0010 10ss sddd - CMP',
+'0100 0010 11ss sddd - NEGCMP',
+'0100 0011 00ss sddd - OR',
+'0100 0011 01ss sddd - MUL',
+'0100 0011 10ss sddd - BIT CLEAR',
+'0100 0011 11ss sddd - NOT',
+
+'0100 0100 xxss sddd - ADD hi register',
+'0100 0101 xxss sddd - CMP hi register',
+'0100 0110 xxss sddd - MOV hi register',
+'0100 0111 0sss s000 - BX only uses rs',
+
+'0100 1ddd nnnn nnnn - LDR IMM (PC)',
+
+'0101 000s ssbb bddd - STR REG OFFSET',
+'0101 001s ssbb bddd - STRH REG OFFSET',
+
+'0101 010s ssbb bddd - STRB REG OFFSET',
+'0101 011s ssbb bddd - LDSB REG OFFSET',
+
+'0101 100s ssbb bddd - LDR REG OFFSET',
+'0101 101s ssbb bddd - LDRH REG OFFSET',
+
+'0101 110s ssbb bddd - LDRB REG OFFSET',
+'0101 111s ssbb bddd - LDSH REG OFFSET',
+
+'0110 0sss ssbb bddd - STR IMM OFFSET',
+'0110 1sss ssbb bddd - LDR IMM OFFSET ',
+'0111 0sss ssbb bddd - STRB IMM OFFSET',
+'0111 1sss ssbb bddd - LDRB IMM OFFSET',
+
+'1000 0sss ssbb bddd - STRH IMM OFFSET',
+'1000 1sss ssbb bddd - LDRH IMM OFFSET',
+
+
+'1001 0ddd nnnn nnnn - STR IMM OFFSET(SP)',
+'1001 1ddd nnnn nnnn - LDR IMM OFFSET(SP)',
+
+
+'1010 0ddd nnnn nnnn - ADD RD PC IMM',
+'1010 1ddd nnnn nnnn - ADD RD SP IMM',
+
+
+'1011 0000 0nnn nnnn - ADD SP IMM',
+'1011 0000 1nnn nnnn - ADD SP -IMM',
+
+
+'1011 010p rrrr rrrr - PUSH',
+'1011 110p rrrr rrrr - POP',
+
+
+'1100 0bbb rrrr rrrr - STMIA',
+'1100 1bbb rrrr rrrr - LDMIA',
+
+'1101 oooo ssss ssss - CONDITIONAL BRANCH',
+'1101 1111 nnnn nnnn - SW INTR',
+
+
+'1110 0sss ssss ssss - UNCONDITIONAL BRANCH',
+
+
+'1111 0nnn nnnn nnnn - LONG BRANCH 1',
+'1111 1nnn nnnn nnnn - LONG BRANCH 2',
+];
+
+
+
+PSEUDOINSTRUCTIONS:
+
+ARM Pseudo Instructions
+  nop              mov r0,r0 (0xE1A00000, opcode 51)
+  ldr Rd,=Imm      ldr Rd,[r15,disp] ;use .pool as parameter field
+  add Rd,=addr     add/sub Rd,r15,disp
+  adr Rd,addr      add/sub Rd,r15,disp
+  adrl Rd,addr     two add/sub opcodes with disp=xx00h+00yyh
+  mov Rd,Imm       mvn Rd,NOT Imm    ;or vice-versa
+  and Rd,Rn,Imm    bic Rd,Rn,NOT Imm ;or vice-versa
+  cmp Rd,Rn,Imm    cmn Rd,Rn,-Imm    ;or vice-versa
+  add Rd,Rn,Imm    sub Rd,Rn,-Imm    ;or vice-versa
+All above opcodes may be made conditional by specifying a {cond} field.
+
+THUMB Pseudo Instructions
+  nop              mov r8,r8 (0x46C0, opcode 29)
+  ldr Rd,=Imm      ldr Rd,[r15,disp] ;use .pool as parameter field
+  add Rd,=addr     add Rd,r15,disp
+  adr Rd,addr      add Rd,r15,disp
+  mov Rd,Rs        add Rd,Rs,0       ;with Rd,Rs in range r0-r7 each

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<files>
+  <file name="RANDOEMERALDFORREALS.gba" source="original">
+    <mtime>1564413150</mtime>
+    <size>16777216</size>
+    <md5>10a58fe278f050e29a1009d7ed4672ad</md5>
+    <crc32>2d99033c</crc32>
+    <sha1>1e90d8b5b4808ffb068fa7d3503f04b243dfa661</sha1>
+    <format>Unknown</format>
+  </file>
+  <file name="RANDOEMERALDFORREALS_archive.torrent" source="metadata">
+    <btih>fe5c31b7946ae547d7cfc373e44d9dccf05f9c01</btih>
+    <mtime>1613624416</mtime>
+    <size>2342</size>
+    <md5>58d32479c356a7fbcbfe76f7a34baf5d</md5>
+    <crc32>27141f9a</crc32>
+    <sha1>7b5a8f51d8b2fe68f9c0dead8259e9d720676883</sha1>
+    <format>Archive BitTorrent</format>
+  </file>
+  <file name="RANDOEMERALDFORREALS_files.xml" source="original">
+    <format>Metadata</format>
+    <md5>7d0b7d81b2f140231969b068be368c7c</md5>
+    <summation>md5</summation>
+  </file>
+  <file name="RANDOEMERALDFORREALS_meta.sqlite" source="original">
+    <mtime>1564413174</mtime>
+    <size>9216</size>
+    <format>Metadata</format>
+    <md5>c31e81cae0363eda477267a72bd1f447</md5>
+    <crc32>0efe6173</crc32>
+    <sha1>de47d5b19d6bafcc6043ccc9519a5aec4126828b</sha1>
+  </file>
+  <file name="RANDOEMERALDFORREALS_meta.xml" source="original">
+    <mtime>1613624414</mtime>
+    <size>971</size>
+    <format>Metadata</format>
+    <md5>36ba554f1a993c5a26e7fe6810d7d15d</md5>
+    <crc32>f255616f</crc32>
+    <sha1>55da65505547378409176776d15fb443b844bece</sha1>
+  </file>
+</files>
