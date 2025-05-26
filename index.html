@@ -295,6 +295,16 @@
 			</div>
 		</div>
     </div>
+		<script>
+  fetch("emerald.gba")
+    .then(res => res.arrayBuffer())
+    .then(buffer => {
+      const rom = new Uint8Array(buffer);
+      Module.FS_createDataFile("/", "rom.gba", rom, true, true);
+      Module.callMain(["rom.gba"]);
+    });
+</script>
+
 	</body>
 
 	<script src = "./src/m7_ex_tonc_demo.js"> </script>
